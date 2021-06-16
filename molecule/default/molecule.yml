@@ -1,0 +1,49 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+platforms:
+  # - name: centos-host
+  #   box: centos/7
+  #   memory: 2048
+  #   cpus: 2
+  - name: ubuntu-host
+    box: ubuntu/groovy64
+    memory: 2048
+    cpus: 2
+provisioner:
+  name: ansible
+  connection_options:
+    ansible_ssh_user: vagrant
+    ansible_ssh_common_args: -o StrictHostKeyChecking=no
+  inventory:
+    host_vars:
+      # centos-host:
+      #   hostname: centos-host
+      ubuntu-host:
+        hostname: ubuntu-host
+    group_vars:
+      all:
+        zabbix_server_dbpassword: CorrectHorseBatteryStaple
+        use_proxy: true
+        proxy_url: http://10.0.0.15:8080
+        proxy_host: 10.0.0.15
+        proxy_cert_path: etc/ssl/certs/e2guardian_proxy_cert.crt
+        proxy_cert_alias: E2Guardian
+        interactive_account:
+          username: alice
+          comment: Alice
+          home_dir: /home/alice
+          pubkeys:
+            - "{{ (lookup('file', '../../keys/id_rsa.pub') }}"
+        service_account:
+          username: ansible
+          comment: Service account
+          home_dir: /var/lib/ansible
+          pubkeys:
+            - "{{ (lookup('file', '../../keys/id_rsa.pub') }}"
+verifier:
+  name: ansible

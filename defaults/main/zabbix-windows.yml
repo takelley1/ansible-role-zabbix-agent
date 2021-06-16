@@ -1,0 +1,38 @@
+---
+
+install_zabbix: true
+
+zabbix_win_install_dir: C:\Program Files\Zabbix  # No trailing slash
+zabbix_win_download_link: >
+  https://cdn.zabbix.com/zabbix/binaries/stable/{{ zabbix_version }}/{{ zabbix_version_long }}/zabbix_agent-{{ zabbix_version_long }}-windows-amd64-openssl.zip
+zabbix_win_exe_path: '{{ zabbix_win_install_dir }}\bin\zabbix_agentd'
+zabbix_agent_host_metadata: Windows
+zabbix_agent_win_logfile: '{{ zabbix_win_install_dir }}\zabbix_agentd.log'
+zabbix_agent_win_include: '{{ zabbix_win_install_dir }}\zabbix_agent.d\'
+
+zabbix_agent_version: 5.2
+zabbix_version: "{{ zabbix_agent_version }}"
+zabbix_version_long: 5.2.4
+zabbix_version_patch: 0
+zabbix_repo: zabbix
+zabbix_agent_package: zabbix-agent
+zabbix_agent_package_state: present
+
+zabbix_host_visible_name: "{{ inventory_hostname }}"
+
+zabbix_agent_src_reinstall: true
+zabbix_agent_apt_priority:
+
+zabbix_agent_distribution_major_version: "{{ ansible_distribution_major_version }}"
+zabbix_agent_distribution_release: "{{ ansible_distribution_release }}"
+zabbix_agent_os_family: "{{ ansible_os_family }}"
+
+# zabbix_agent.conf variables
+zabbix_agent_include: /etc/zabbix/zabbix_agentd.d
+zabbix_agent_unsafeuserparameters: 0
+zabbix_agent_userparameters: []
+zabbix_agent_userparameters_templates_src: userparameters
+zabbix_agent_userparameters_scripts_src: scripts
+zabbix_agent_custom_scripts: false
+zabbix_agent_become_on_localhost: true
+zabbix_agent_inventory_zabbix: {}

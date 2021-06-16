@@ -1,0 +1,30 @@
+---
+
+- name: MAIN | Windows uninstall tasks imported
+  include_tasks: windows-uninstall.yml
+  when:
+    - uninstall
+    - ansible_os_family == "Windows"
+
+- name: MAIN | Windows install tasks imported
+  import_tasks: windows-install.yml
+  tags: install
+  when:
+    - not uninstall
+    - ansible_os_family == "Windows"
+
+- name: MAIN | Linux install tasks imported
+  become: true
+  import_tasks: linux-install.yml
+  tags: install
+  when:
+    - not uninstall
+    - ansible_os_family != "Windows"
+
+- name: MAIN | Flush handlers
+  meta: flush_handlers
+
+- name: MAIN | Configure tasks imported
+  import_tasks: configure.yml
+  tags: configure
+  when: not uninstall

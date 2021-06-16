@@ -1,0 +1,43 @@
+---
+
+# Single quotes are used here so backslashes in path names don't
+#  require escaping.
+
+- name: WINDOWS_UNINSTALL | Zabbix Agent stopped
+  ansible.windows.win_service:
+    name: Zabbix Agent
+    state: stopped
+
+- name: WINDOWS_UNINSTALL | Zabbix uninstalled
+  ansible.windows.win_command: '"{{ zabbix_win_exe_path }}" --config "{{ zabbix_win_install_dir }}\zabbix_agentd.conf" --uninstall'
+
+- name: WINDOWS_UNINSTALL | Directories removed
+  ansible.windows.win_file:
+    path: '{{ zabbix_win_install_dir }}\'
+    state: absent
+
+- name: WINDOWS_UNINSTALL | Serivce account deleted
+  ansible.windows.win_user:
+    name: zabbix
+    fullname: Zabbix Agent
+    state: absent
+
+- name: ZABBIX | Host information updated on Zabbix server
+  become: false
+  delegate_to: localhost
+  community.zabbix.zabbix_host:
+    server_url: "{{ zabbix_server_url }}"
+    login_user: "{{ zabbix_service_account_name }}"
+    login_password: "{{ zabbix_service_account_password }}"
+    host_name: "{{ hostname }}"
+    validate_certs: "{{ zabbix_validate_certs }}"
+    visible_name: "{{ zabbix_host_visible_name }}"
+    description: "{{ notes | default('This host requires a description!') }}"
+    host_groups: "{{ zabbix_host_group_membership | default(omit) }}"
+    link_templates: "{{ zabbix_templates }}"
+    tls_connect: 2
+    tls_accept: 2
+    tls_psk: "{{ zabbix_psk }}"
+    tls_psk_identity: "{{ zabbix_tlspskidentity }}"
+    proxy: "{{ zabbix_server_or_proxy_name | default(omit) }}"
+    state: absent

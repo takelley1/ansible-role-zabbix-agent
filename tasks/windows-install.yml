@@ -1,0 +1,178 @@
+---
+
+# Single quotes are used here so backslashes in path names don't
+#  require escaping.
+
+- name: WINDOWS_INSTALL | Serivce account created
+  ansible.windows.win_user:
+    name: zabbix
+    fullname: Zabbix Agent
+    description: Local service account for Zabbix Agent with restricted permissions
+    groups:
+      - Performance Monitor Users
+      - Event Log Readers
+      - Users
+    groups_action: add
+    password_never_expires: true
+    password: "{{ zabbix_win_user_password }}"
+  notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | Service account privileges edited
+  ansible.windows.win_user_right:
+    name: SeServiceLogonRight
+    users: zabbix
+    action: add
+  notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | Set default IP address for zabbix_agent_ip
+  set_fact:
+    zabbix_agent_ip: "{{ ansible_host }}"
+  when:
+    - zabbix_agent_ip is not defined
+    - ansible_host is defined
+
+- name: WINDOWS_INSTALL | Check if Zabbix agent is present
+  ansible.windows.win_stat:
+    path: '{{ zabbix_win_exe_path }}'
+  register: agent_file_info
+
+- name: WINDOWS_INSTALL | Get Installed Zabbix Agent Version
+  community.windows.win_file_version:
+    path: '{{ zabbix_win_exe_path }}'
+  register: zabbix_win_exe_info
+  when: agent_file_info.stat.exists
+
+- name: WINDOWS_INSTALL | Check Update (Set default)
+  set_fact:
+    update_zabbix_agent: false
+  when: agent_file_info.stat.exists
+
+- name: WINDOWS_INSTALL | Checking Update
+  set_fact:
+    update_zabbix_agent: true
+  when:
+    - agent_file_info.stat.exists
+    - zabbix_win_exe_info.win_file_version.product_version is version(zabbix_version_long, '<')
+    - zabbix_agent_package_state == 'latest'
+
+- name: WINDOWS_INSTALL | Directories created
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - '{{ zabbix_win_install_dir }}'
+    - '{{ zabbix_agent_win_include }}'
+
+- name: WINDOWS_INSTALL | Zabbix stopped (Update)
+  ansible.windows.win_service:
+    name: Zabbix Agent
+    start_mode: auto
+    state: stopped
+  when:
+    - update_zabbix_agent | default(false)
+    - agent_file_info.stat.exists
+
+- name: WINDOWS_INSTALL | Zabbix uninstalled (Update)
+  ansible.windows.win_command: '{{ zabbix_win_exe_path }} --config {{ zabbix_win_install_dir }}\zabbix_agentd.conf --uninstall'
+  register: zabbix_windows_install
+  when:
+    - update_zabbix_agent | default(false)
+    - agent_file_info.stat.exists
+
+- name: WINDOWS_INSTALL | Zabbix Directory removed (Update)
+  ansible.windows.win_file:
+    path: '{{ zabbix_win_install_dir }}'
+    state: absent
+  when:
+    - update_zabbix_agent | default(false)
+    - agent_file_info.stat.exists
+
+- name: WIN_INSTALL | Determine package name
+  set_fact:
+    zabbix_win_package: zabbix_agent-{{ zabbix_version_long }}-windows-amd64-openssl.zip
+
+- name: WINDOWS_INSTALL | Check if file is already downloaded
+  ansible.windows.win_stat:
+    path: '{{ zabbix_win_install_dir }}\{{ zabbix_win_package }}'
+  register: file_info
+
+- name: WINDOWS_INSTALL | Downloaded Zabbix Agent zip file
+  ansible.windows.win_get_url:
+    url: '{{ zabbix_win_download_link }}'
+    dest: '{{ zabbix_win_install_dir }}\{{ zabbix_win_package }}'
+    force: false
+    follow_redirects: all
+    proxy_url: '{{ zabbix_https_proxy | default(omit) }}'
+  register: zabbix_agent_win_download_zip
+  until: zabbix_agent_win_download_zip is succeeded
+
+- name: WINDOWS_INSTALL | Archive unzipped
+  community.windows.win_unzip:
+    src: '{{ zabbix_win_install_dir }}\{{ zabbix_win_package }}'
+    dest: '{{ zabbix_win_install_dir }}'
+    creates: '{{ zabbix_win_exe_path }}'
+  when: zabbix_agent_win_download_zip.changed
+  notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | PSK deployed
+  ansible.windows.win_copy:
+    content: "{{ zabbix_psk }}"
+    dest: '{{ zabbix_agent_tlspskfile }}'
+  when: zabbix_agent_tlspskfile is defined
+  notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | Zabbix agent configured
+  ansible.windows.win_template:
+    src: zabbix_agentd.conf.j2
+    dest: '{{ zabbix_win_install_dir }}\conf\zabbix_agentd.conf'
+  notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | Zabbix service account has write permission to log file
+  block:
+
+    - name: WINDOWS_INSTALL | Check for log file
+      ansible.windows.win_stat:
+        path: '{{ zabbix_agent_win_logfile }}'
+      register: log_file
+
+    - name: WINDOWS_INSTALL | Zabbix log file created
+      ansible.windows.win_file:
+        path: '{{ zabbix_agent_win_logfile }}'
+        state: touch
+      when: not log_file.stat.exists
+
+    - name: WINDOWS_INSTALL | Zabbix user has write permission to log file
+      ansible.windows.win_acl:
+        user: zabbix
+        path: '{{ zabbix_agent_win_logfile }}'
+        type: allow
+        rights: Write,Modify
+      notify: restart-zabbix-agent-windows
+
+- name: WINDOWS_INSTALL | Service created
+  ansible.windows.win_service:
+    name: Zabbix Agent
+    description: Zabbix system monitoring service
+    path: '"{{ zabbix_win_exe_path }}" --config "{{ zabbix_win_install_dir }}\conf\zabbix_agentd.conf"'
+    start_mode: auto
+    username: zabbix
+    password: "{{ zabbix_win_user_password }}"
+    state: started
+    failure_reset_period_sec: 86400
+    failure_actions:
+      - type: restart
+        delay: 5000
+      - type: restart
+        delay: 10000
+      - type: restart
+        delay: 30000
+
+# Active agents don't need firewall rules
+# - name: WINDOWS_INSTALL | Agent allowed through firewall
+#   win_firewall_rule:
+#     name: Zabbix Agent
+#     localport: '{{ zabbix_agent_listenport }}'
+#     action: allow
+#     direction: in
+#     protocol: tcp
+#     state: present
