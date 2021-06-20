@@ -25,7 +25,7 @@
   notify: restart-zabbix-agent-windows
 
 - name: WINDOWS_INSTALL | Set default IP address for zabbix_agent_ip
-  set_fact:
+  ansible.builtin.set_fact:
     zabbix_agent_ip: "{{ ansible_host }}"
   when:
     - zabbix_agent_ip is not defined
@@ -43,12 +43,12 @@
   when: agent_file_info.stat.exists
 
 - name: WINDOWS_INSTALL | Check Update (Set default)
-  set_fact:
+  ansible.builtin.set_fact:
     update_zabbix_agent: false
   when: agent_file_info.stat.exists
 
 - name: WINDOWS_INSTALL | Checking Update
-  set_fact:
+  ansible.builtin.set_fact:
     update_zabbix_agent: true
   when:
     - agent_file_info.stat.exists
@@ -88,7 +88,7 @@
     - agent_file_info.stat.exists
 
 - name: WIN_INSTALL | Determine package name
-  set_fact:
+  ansible.builtin.set_fact:
     zabbix_win_package: zabbix_agent-{{ zabbix_version_long }}-windows-amd64-openssl.zip
 
 - name: WINDOWS_INSTALL | Check if file is already downloaded

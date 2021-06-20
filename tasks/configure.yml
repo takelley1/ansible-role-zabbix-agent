@@ -3,13 +3,13 @@
 # This concatenates the zabbix_templates list obtained from group_vars with
 #   the zabbix_templates_extra list obtained from individual host_vars.
 - name: ZABBIX | Assemble template list
-  set_fact:
+  ansible.builtin.set_fact:
     zabbix_templates: "{{ zabbix_templates + zabbix_templates_extra }}"
   when: zabbix_templates_extra is defined
 
 # Do the same thing for the host groups.
 - name: ZABBIX | Assemble host groups list
-  set_fact:
+  ansible.builtin.set_fact:
     zabbix_host_group_membership: "{{ zabbix_host_group_membership + zabbix_host_group_membership_extra }}"
   when: zabbix_host_group_membership_extra is defined
 

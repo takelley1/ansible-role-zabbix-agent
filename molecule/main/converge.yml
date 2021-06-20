@@ -4,5 +4,5 @@
   become: true
   tasks:
     - name: Include ansible-role-zabbix-server
-      include_role:
+      ansible.builtin.include_role:
         name: ansible-role-zabbix-server
