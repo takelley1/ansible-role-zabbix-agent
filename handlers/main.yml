@@ -13,3 +13,17 @@
     state: restarted
     enabled: true
   listen: restart-zabbix-agent-linux
+
+- name: HANDLERS | Zabbix agent 2 restarted (Linux)
+  ansible.builtin.service:
+    name: zabbix-agent2
+    state: restarted
+    enabled: true
+  listen: restart-zabbix-agent2-linux
+
+- name: HANDLERS | Zabbix agent restarted (FreeBSD)
+  ansible.builtin.service:
+    name: zabbix_agentd
+    state: restarted
+    enabled: true
+  listen: restart-zabbix-agent-freebsd
