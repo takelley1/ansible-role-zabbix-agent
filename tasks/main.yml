@@ -8,7 +8,7 @@
 
 - name: MAIN | Windows install tasks imported
   ansible.builtin.import_tasks: windows-install.yml
-  tags: install
+  tags: zab_agent_install
   when:
     - not uninstall
     - ansible_os_family == "Windows"
@@ -16,15 +16,25 @@
 - name: MAIN | Linux install tasks imported
   become: true
   ansible.builtin.import_tasks: linux-install.yml
-  tags: install
+  tags: zab_agent_install
   when:
     - not uninstall
     - ansible_os_family != "Windows"
+    - ansible_system == "Linux"
+
+- name: MAIN | FreeBSD install tasks imported
+  become: true
+  ansible.builtin.import_tasks: freebsd-install.yml
+  tags: zab_agent_install
+  when:
+    - not uninstall
+    - ansible_os_family != "Windows"
+    - ansible_system == "FreeBSD"
 
 - name: MAIN | Flush handlers
   meta: flush_handlers
 
 - name: MAIN | Configure tasks imported
   ansible.builtin.import_tasks: configure.yml
-  tags: configure
+  tags: zab_agent_configure
   when: not uninstall
