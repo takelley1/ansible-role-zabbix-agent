@@ -3,7 +3,7 @@
 zabbix_agent_pidfile: /run/zabbix/zabbix_agentd.pid
 
 zabbix_agent_logtype: file
-zabbix_agent_logfile: /var/log/zabbix/zabbix_agentd.log
+zabbix_agent_logfile: /tmp/zabbix_agentd.log
 zabbix_agent_logfilesize: 10
 
 zabbix_agent_debuglevel: 3
@@ -11,8 +11,8 @@ zabbix_agent_debuglevel: 3
 
 ##### Passive checks related
 # zabbix_agent_server:
-zabbix_agent_listenport: 10050
-zabbix_agent_listenip: 0.0.0.0
+# zabbix_agent_listenport: 10050
+# zabbix_agent_listenip: 0.0.0.0
 
 zabbix_agent_startagents: 0
 
