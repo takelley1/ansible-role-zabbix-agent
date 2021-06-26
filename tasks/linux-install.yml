@@ -1,47 +1,56 @@
 ---
 
-- name: LINUX_INSTALL | Zabbix allowed in firewalld
+# RHEL ------------------------------------------------------------------------
+- name: LINUX_INSTALL | RHEL | Zabbix allowed in firewalld
   ansible.posix.firewalld:
     service: zabbix-agent
     permanent: true
     immediate: true
     zone: "{{ firewalld_zone }}"
     state: enabled
+  when: ansible_distribution_file_variety == "RHEL"
+  notify: restart-zabbix-agent-linux
 
-- name: LINUX_INSTALL | Zabbix repo installed
+- name: LINUX_INSTALL | RHEL | Zabbix repo installed
   block:
     - name: Check for zabbix repo file
       ansible.builtin.stat:
         path: /etc/yum.repos.d/zabbix.repo
       register: repopath
     - name: Zabbix repo added
-      shell: rpm -Uvh "{{ zabbix_repo_url }}" && yum clean all
+      shell: rpm -Uvh "{{ zabbix_repo_url_rhel }}" && yum clean all
       when: not repopath.stat.exists
+  when: ansible_distribution_file_variety == "RHEL"
+  notify: restart-zabbix-agent-linux
 
-- name: LINUX_INSTALL | Old Zabbix agent absent
+- name: LINUX_INSTALL | RHEL | Old Zabbix agent absent
   ansible.builtin.yum:
     state: absent
     autoremove: true
     update_cache: true
     name:
       - zabbix4*-agent
+  when: ansible_distribution_file_variety == "RHEL"
+  notify: restart-zabbix-agent-linux
 
-- name: LINUX_INSTALL | Zabbix agent and API installed
+- name: LINUX_INSTALL | RHEL | Zabbix agent and API installed
   ansible.builtin.yum:
     state: present
     name:
       - "{{ zabbix_agent_package_name }}"
       - "{{ zabbix_api_package_name }}"
+  when: ansible_distribution_file_variety == "RHEL"
   notify: restart-zabbix-agent
 
 # SELinux likes to block Zabbix from opening ports.
-- name: LINUX_INSTALL | Zabbix agent has SELinux exception
+- name: LINUX_INSTALL | RHEL | Zabbix agent has SELinux exception
   selinux_permissive:
     name: zabbix_agent_t
     permissive: true
+  when: ansible_distribution_file_variety == "RHEL"
   notify: restart-zabbix-agent
 
-- name: LINUX_INSTALL | /etc/zabbix_agentd.conf deployed
+- name: LINUX_INSTALL | RHEL | /etc/zabbix_agentd.conf deployed
   ansible.builtin.template:
     src: zabbix_agentd.conf.j2
     dest: /etc/zabbix/zabbix_agentd.conf
@@ -52,8 +61,45 @@
     seuser: system_u
     serole: object_r
     setype: etc_t
+  tags: zab_agent_template
+  when: ansible_distribution_file_variety == "RHEL"
   notify: restart-zabbix-agent-linux
 
+# UBUNTU ----------------------------------------------------------------------
+- name: LINUX_INSTALL | UBUNTU | Zabbix allowed in UFW
+  community.general.ufw:
+    state: enabled
+    rule: allow
+    port: "10050"
+  when: ansible_distribution_file_variety == "Debian"
+  notify: restart-zabbix-agent2-linux
+
+- name: LINUX_INSTALL | UBUNTU | Repo package installed
+  ansible.builtin.apt:
+    deb: "{{ zabbix_repo_url_ubuntu }}"
+  when: ansible_distribution_file_variety == "Debian"
+  notify: restart-zabbix-agent2-linux
+
+- name: LINUX_INSTALL | UBUNTU | Packages installed
+  ansible.builtin.apt:
+    update_cache: true
+    name: zabbix-agent2
+  when: ansible_distribution_file_variety == "Debian"
+  notify: restart-zabbix-agent2-linux
+
+- name: LINUX_INSTALL | /etc/zabbix_agent2.conf deployed
+  ansible.builtin.template:
+    src: zabbix_agentd.conf.j2
+    dest: /etc/zabbix/zabbix_agent2.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  tags: zab_agent_template
+  when: ansible_distribution_file_variety == "Debian"
+  notify: restart-zabbix-agent2-linux
+
+# -----------------------------------------------------------------------------
 - name: LINUX_INSTALL | PSK deployed
   block:
     - name: LINUX_INSTALL | PSK path exists
@@ -74,12 +120,21 @@
       notify: restart-zabbix-agent-linux
   when: zabbix_agent_TLSPSKFile is defined
 
-- name: LINUX_INSTALL | Zabbix agent enabled and running
+- name: LINUX_INSTALL | RHEL | Zabbix agent enabled and running
   ansible.builtin.systemd:
     name: zabbix-agent.service
     state: started
     enabled: true
     masked: false
+  when: ansible_distribution_file_variety == "RHEL"
+
+- name: LINUX_INSTALL | UNUNTU | Zabbix agent enabled and running
+  ansible.builtin.systemd:
+    name: zabbix-agent2.service
+    state: started
+    enabled: true
+    masked: false
+  when: ansible_distribution_file_variety == "Debian"
 
 # - name: LINUX_INSTALL | Fix zabbix_api.py
 #   become: true
