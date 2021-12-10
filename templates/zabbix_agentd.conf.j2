@@ -9,7 +9,7 @@
 #	Name of PID file.
 #
 # Mandatory: no
-{% if "Windows" not in ansible_os_family and "Linux" in ansible_system and zabbix_agent_pidfile is defined and zabbix_agent_pidfile !="" %}
+{% if "Windows" not in ansible_facts.os_family and "Linux" in ansible_facts.system and zabbix_agent_pidfile is defined and zabbix_agent_pidfile !="" %}
 PidFile={{ zabbix_agent_pidfile }}
 {% endif %}
 
@@ -29,7 +29,7 @@ LogType={{ zabbix_agent_logtype }}
 #
 # Mandatory: yes, if LogType is set to file, otherwise no
 # Default:
-{% if "Windows" in ansible_os_family %}
+{% if "Windows" in ansible_facts.os_family %}
 LogFile={{ zabbix_agent_win_logfile }}
 {% else %}
 LogFile={{ zabbix_agent_logfile }}
@@ -269,7 +269,7 @@ Alias={{ zabbix_agent_zabbix_alias }}
 Timeout={{ zabbix_agent_timeout }}
 {% endif %}
 
-{% if "Windows" not in ansible_os_family %}
+{% if "Windows" not in ansible_facts.os_family %}
 ### Option: AllowRoot
 #	Allow the agent to run as 'root'. If disabled and the agent is started by 'root', the agent
 #	will try to switch to the user specified by the User configuration option instead.
@@ -305,9 +305,9 @@ User={{ zabbix_agent_runas_user }}
 # Default:
 # Include=
 {% if zabbix_agent_include is defined and zabbix_agent_include !="" %}
-{% if "Windows" in ansible_os_family %}
+{% if "Windows" in ansible_facts.os_family %}
 Include={{ zabbix_agent_win_include }}
-{% elif "Linux" in ansible_system %}
+{% elif "Linux" in ansible_facts.system %}
 Include={{ zabbix_agent_include }}
 {% endif %}
 {% endif %}
@@ -356,7 +356,7 @@ UserParameter={{ zabbix_agent_userparameter }}
 # Mandatory: no
 # Default:
 # LoadModulePath=${libdir}/modules
-{% if "Windows" not in ansible_os_family %}
+{% if "Windows" not in ansible_facts.os_family %}
 {% if zabbix_agent_loadmodulepath is defined and zabbix_agent_loadmodulepath !="" %}
 LoadModulePath={{ zabbix_agent_loadmodulepath }}
 {% endif %}

@@ -23,9 +23,9 @@ zabbix_host_visible_name: "{{ inventory_hostname }}"
 zabbix_agent_src_reinstall: true
 zabbix_agent_apt_priority:
 
-zabbix_agent_distribution_major_version: "{{ ansible_distribution_major_version }}"
-zabbix_agent_distribution_release: "{{ ansible_distribution_release }}"
-zabbix_agent_os_family: "{{ ansible_os_family }}"
+zabbix_agent_distribution_major_version: "{{ ansible_facts.distribution_major_version }}"
+zabbix_agent_distribution_release: "{{ ansible_facts.distribution_release }}"
+zabbix_agent_os_family: "{{ ansible_facts.os_family }}"
 
 # zabbix_agent.conf variables
 zabbix_agent_include: /etc/zabbix/zabbix_agentd.d

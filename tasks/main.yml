@@ -4,14 +4,14 @@
   ansible.builtin.import_tasks: windows-uninstall.yml
   when:
     - uninstall
-    - ansible_os_family == "Windows"
+    - ansible_facts.os_family == "Windows"
 
 - name: MAIN | Windows install tasks imported
   ansible.builtin.import_tasks: windows-install.yml
   tags: zab_agent_install
   when:
     - not uninstall
-    - ansible_os_family == "Windows"
+    - ansible_facts.os_family == "Windows"
 
 - name: MAIN | Linux install tasks imported
   become: true
@@ -19,8 +19,8 @@
   tags: zab_agent_install
   when:
     - not uninstall
-    - ansible_os_family != "Windows"
-    - ansible_system == "Linux"
+    - ansible_facts.os_family != "Windows"
+    - ansible_facts.system == "Linux"
 
 - name: MAIN | FreeBSD install tasks imported
   become: true
@@ -28,8 +28,8 @@
   tags: zab_agent_install
   when:
     - not uninstall
-    - ansible_os_family != "Windows"
-    - ansible_system == "FreeBSD"
+    - ansible_facts.os_family != "Windows"
+    - ansible_facts.system == "FreeBSD"
 
 - name: MAIN | Flush handlers
   meta: flush_handlers
